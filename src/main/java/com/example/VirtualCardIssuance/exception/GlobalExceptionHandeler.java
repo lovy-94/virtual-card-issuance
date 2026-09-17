@@ -42,17 +42,6 @@ public class GlobalExceptionHandeler {
         log.info("Message: " + insufficientBalanceException.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
-
-    @ExceptionHandler(NegativeAmountException.class)
-    public ResponseEntity<Error> negativeAmountException(NegativeAmountException negativeAmountException){
-        Error error = new Error();
-        error.setMessage(negativeAmountException.getMessage());
-        error.setStatus(HttpStatus.BAD_REQUEST);
-        error.setCreatedAt(LocalDateTime.now());
-        log.info("Message: " + negativeAmountException.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(DuplicateRequestException.class)
     public ResponseEntity<Error> duplicateRequestException(DuplicateRequestException duplicateRequestException){
         Error error = new Error();
@@ -71,6 +60,17 @@ public class GlobalExceptionHandeler {
         error.setStatus(HttpStatus.BAD_REQUEST);
         error.setCreatedAt(LocalDateTime.now());
         log.info("Message: " + methodArgumentNotValidException.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler(ConcurrentUpdateException.class)
+    public ResponseEntity<Error> concurrentUpdateException(
+            ConcurrentUpdateException concurrentUpdateException) {
+
+        Error error = new Error();
+        error.setMessage(concurrentUpdateException.getMessage());
+        error.setStatus(HttpStatus.BAD_REQUEST);
+        error.setCreatedAt(LocalDateTime.now());
+        log.info("Message: " + concurrentUpdateException.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 

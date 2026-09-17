@@ -8,18 +8,19 @@ import com.example.VirtualCardIssuance.entity.*;
 import com.example.VirtualCardIssuance.exception.*;
 import com.example.VirtualCardIssuance.repository.CardRepository;
 import com.example.VirtualCardIssuance.validation.CardValidation;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,16 +45,19 @@ public class CardServiceTest {
     private Card card;
     private TopupRequest topupRequest;
     private Transaction existingTransaction;
+    private MeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() {
-        cardValidation = new CardValidation(transactionService);
-
+        cardValidation = new CardValidation();
+meterRegistry=new SimpleMeterRegistry();
         cardService = new CardService(
                 cardRepository,
                 transactionService,
-                cardValidation
+                cardValidation,
+                meterRegistry
         );
+
          cardRequest = new CardRequest("Amy", BigDecimal.valueOf(5000));
          spendRequest = new SpendRequest(BigDecimal.valueOf(500));
          spendRequest.setCardId(1L);
@@ -75,14 +79,6 @@ public class CardServiceTest {
     }
 
     @Test
-    public void testCreateNewCardWithNegativeValue(){
-        cardRequest.setInitialBalance(BigDecimal.valueOf(-5000));
-        assertThrows(
-                NegativeAmountException.class,
-                () -> cardService.createNewCard(cardRequest));
-    }
-
-    @Test
     public void testPositiveSpendFromCard(){
         when(transactionService.findByIdempotencyKey("abc-121"))
                 .thenReturn(Optional.empty());
@@ -90,7 +86,7 @@ public class CardServiceTest {
                 .thenReturn(Optional.of(card));
         when(cardRepository.debitAmount(1L,BigDecimal.valueOf(500))).thenReturn(1);
         cardService.spendFromCard(spendRequest,"abc-121");
-        verify(transactionService, Mockito.times(1)).saveTransaction(any());
+        verify(transactionService, Mockito.times(2)).saveTransaction(any());
     }
 
     @Test
@@ -133,19 +129,7 @@ public class CardServiceTest {
         );
         verify(transactionService,Mockito.times(1)).saveFailedTransaction(any());
     }
-    @Test
-    public void testNegativeAmountSpendFromCard(){
-        spendRequest.setDebitAmount(BigDecimal.valueOf(-500));
-        when(transactionService.findByIdempotencyKey("abc-121"))
-                .thenReturn(Optional.empty());
-        when(cardRepository.findById(spendRequest.getCardId()))
-                .thenReturn(Optional.of(card));
-        assertThrows(
-                NegativeAmountException.class,
-                () -> cardService.spendFromCard(spendRequest,"abc-121")
-        );
-        verify(transactionService,Mockito.times(1)).saveFailedTransaction(any());
-    }
+
     @Test
     public void testPositiveTopup(){
         when(transactionService.findByIdempotencyKey("abc-121"))
@@ -154,18 +138,9 @@ public class CardServiceTest {
                 .thenReturn(Optional.of(card));
         when(cardRepository.creditAmount(1L,BigDecimal.valueOf(500))).thenReturn(1);
         cardService.topUp(topupRequest,"abc-121");
-        verify(transactionService,Mockito.times(1)).saveTransaction(any());
+        verify(transactionService,Mockito.times(2)).saveTransaction(any());
     }
-    @Test
-    public void testNegativeAmountTopup(){
-        topupRequest.setCreditAmount(BigDecimal.valueOf(-500));
-        when(transactionService.findByIdempotencyKey("abc-121"))
-                .thenReturn(Optional.empty());
-        when(cardRepository.findById(topupRequest.getCardId()))
-                .thenReturn(Optional.of(card));
-        assertThrows(NegativeAmountException.class, ()->cardService.topUp(topupRequest,"abc-121"));
-        verify(transactionService,Mockito.times(1)).saveFailedTransaction(any());
-    }
+
     @Test
     public void testCardNotFoundTopup(){
         when(transactionService.findByIdempotencyKey("abc-121"))

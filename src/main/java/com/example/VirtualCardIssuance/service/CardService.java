@@ -5,11 +5,13 @@ import com.example.VirtualCardIssuance.entity.*;
 import com.example.VirtualCardIssuance.exception.*;
 import com.example.VirtualCardIssuance.repository.CardRepository;
 import com.example.VirtualCardIssuance.validation.CardValidation;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -21,19 +23,19 @@ public class CardService {
     private final CardRepository cardRepository;
     private final TransactionService transactionService;
     private final CardValidation cardValidation;
+    private final MeterRegistry meterRegistry;
 
-    public CardService(CardRepository cardRepository, TransactionService transactionService, CardValidation cardValidation){
+    public CardService(CardRepository cardRepository, TransactionService transactionService,
+                       CardValidation cardValidation, MeterRegistry meterRegistry){
         this.cardRepository=cardRepository;
         this.transactionService = transactionService;
         this.cardValidation = cardValidation;
+        this.meterRegistry = meterRegistry;
     }
 
     @Transactional
     public void createNewCard(CardRequest cardRequest){
         log.info("Create New Card: cardRequest {}",cardRequest);
-        if (cardRequest.getInitialBalance().compareTo(BigDecimal.ZERO) < 0) {
-            throw new NegativeAmountException("Initial balance is negative");
-        }
         Card card = new Card();
         card.setCardholderName(cardRequest.getCardHolderName());
         card.setBalance(cardRequest.getInitialBalance());
@@ -52,9 +54,12 @@ public class CardService {
         transaction.setType(TransactionType.SPEND);
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setIdempotencyKey(idempotencyKey);
+        transaction.setStatus(TransactionStatus.PENDING);
+        try{
+            checkIdempotency(idempotencyKey);
+            transactionService.saveTransaction(transaction);
 
-        checkIdempotency(idempotencyKey);
-        try {
+
             Card card = cardRepository.findById(spendRequest.getCardId()).orElse(null);
             cardValidation.spendCardValidations(card, spendRequest);
 
@@ -62,26 +67,35 @@ public class CardService {
             if (debitted == 1) {
                 transaction.setStatus(TransactionStatus.SUCCESSFUL);
                 transactionService.saveTransaction(transaction);
+                meterRegistry.counter("card.spend", "result", "success").increment();
                 log.info("Spend from card : debitted {}, transaction {} ", debitted, transaction);
                 return;
             }
-            updateFailedTransaction(transaction);
-            throw new RuntimeException("Spend request failed or two requests trying to modify together " + spendRequest.getCardId() +
+
+            throw new ConcurrentUpdateException("Spend request failed or two requests trying to modify together " + spendRequest.getCardId() +
                     " " + spendRequest.getDebitAmount());
 
         }
-        catch(CardNotFoundException | InactiveCardException | NegativeAmountException
-        | InsufficientBalanceException ex){
+        catch(CardNotFoundException | InactiveCardException
+        | InsufficientBalanceException | ConcurrentUpdateException ex){
             updateFailedTransaction(transaction);
+            meterRegistry.counter("card.spend", "result", ex.getClass().getSimpleName()).increment();
             throw ex;
+        }
+        catch (DataIntegrityViolationException | DuplicateRequestException ex){
+            meterRegistry.counter("card.spend","result","duplicate-key").increment();
+            throw  new DuplicateRequestException("Duplicate request for idempotency key"+idempotencyKey );
         }
     }
 
-    private void checkIdempotency(String idempotencyKey) {
-        Optional<Transaction> existingTxn = transactionService.findByIdempotencyKey(idempotencyKey);
-
-        if(existingTxn.isPresent()){
-            throw new DuplicateRequestException("DuplicateRequest Trannsaction is already present "+ idempotencyKey);
+    public void checkIdempotency(String idempotencyKey) {
+        try{
+            Optional<Transaction>  duplicateTxnExists= transactionService.findByIdempotencyKey(idempotencyKey);
+            if(duplicateTxnExists.isPresent()){
+                throw new DuplicateRequestException("Duplicate Request found {}"+idempotencyKey);
+            }
+        }catch(DuplicateRequestException ex){
+            throw  ex;
         }
     }
 
@@ -94,29 +108,37 @@ public class CardService {
         transaction.setType(TransactionType.TOPUP);
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setIdempotencyKey(idempotencyKey);
+        transaction.setStatus(TransactionStatus.PENDING);
 
-        checkIdempotency(idempotencyKey);
+        try {
+            checkIdempotency(idempotencyKey);
+            transactionService.saveTransaction(transaction);
 
         Card card = cardRepository.findById(topupRequest.getCardId()).orElse(null);
-    try {
         cardValidation.topUpValidations(card, topupRequest);
 
-    int creditted = cardRepository.creditAmount(topupRequest.getCardId(), topupRequest.getCreditAmount());
-    if (creditted == 1) {
+        int creditted = cardRepository.creditAmount(topupRequest.getCardId(), topupRequest.getCreditAmount());
+        if (creditted == 1) {
         transaction.setStatus(TransactionStatus.SUCCESSFUL);
         transactionService.saveTransaction(transaction);
+        meterRegistry.counter("card.topup", "result", "success").increment();
         log.info("Top up card : creditted {}, transaction {}", creditted, transaction);
         return;
-    }
-        updateFailedTransaction(transaction);
-        throw new RuntimeException("Topup failed or two requests trying to modify together " + topupRequest.getCardId() +
+        }
+
+        throw new ConcurrentUpdateException("Topup failed or two requests trying to modify together " + topupRequest.getCardId() +
             " " + topupRequest.getCreditAmount());
-}
-  catch(CardNotFoundException | InactiveCardException | NegativeAmountException
-      | InsufficientBalanceException ex){
-      updateFailedTransaction(transaction);
-      throw ex;
-}
+        }
+        catch(CardNotFoundException | InactiveCardException
+        | InsufficientBalanceException | ConcurrentUpdateException  ex){
+        updateFailedTransaction(transaction);
+        meterRegistry.counter("card.topup", "result", ex.getClass().getSimpleName()).increment();
+        throw ex;
+        }
+        catch (DataIntegrityViolationException | DuplicateRequestException ex){
+            meterRegistry.counter("card.topup","result","duplicate-key").increment();
+            throw  new DuplicateRequestException("Duplicate request for idempotency key"+idempotencyKey );
+        }
     }
 
     private void updateFailedTransaction(Transaction transaction) {

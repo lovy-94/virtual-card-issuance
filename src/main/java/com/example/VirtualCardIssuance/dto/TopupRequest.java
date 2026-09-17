@@ -12,6 +12,6 @@ import java.math.BigDecimal;
 @Setter
 public class TopupRequest extends TransactionRequest{
     @NotNull(message = "Credit Amount should not be null")
-    @DecimalMin(value="0.0", message = "Credit Amount should not be negative")
+    @DecimalMin(value="0.0", inclusive = false, message = "Credit Amount should not be negative")
     private BigDecimal creditAmount;
 }

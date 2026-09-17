@@ -10,12 +10,12 @@ import java.math.BigDecimal;
 
 public interface CardRepository extends JpaRepository<Card,Long> {
     @Modifying
-    @Query("UPDATE Card c SET c.balance=c.balance-:debitAmount, c.version=c.version+1" +
+    @Query("UPDATE Card c SET c.balance=c.balance-:debitAmount, c.version=c.version+1 " +
             "WHERE c.id=:cardId AND c.status=com.example.VirtualCardIssuance.entity.CardStatus.ACTIVE AND c.balance>=:debitAmount")
     int debitAmount(@Param("cardId") Long cardId, @Param("debitAmount") BigDecimal debitAmount);
 
     @Modifying
-    @Query("UPDATE Card c SET c.balance=c.balance+:creditAmount, c.version=c.version+1" +
+    @Query("UPDATE Card c SET c.balance=c.balance+:creditAmount, c.version=c.version+1 " +
             "WHERE c.id=:cardId AND c.status=com.example.VirtualCardIssuance.entity.CardStatus.ACTIVE")
     int creditAmount(@Param("cardId")Long cardId, @Param("creditAmount")BigDecimal creditAmount);
 }

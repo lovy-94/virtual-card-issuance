@@ -51,6 +51,5 @@ public class TransactionService {
 
     public Optional<Transaction> findByIdempotencyKey(String idempotencyKey) {
         return transactionRepository.findByIdempotencyKey(idempotencyKey);
-
     }
 }

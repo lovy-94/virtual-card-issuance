@@ -18,6 +18,6 @@ public class CardRequest {
     @NotNull(message = "Card Holder Name should not be null")
     private String cardHolderName;
     @NotNull(message = "Initial Balance should not be null")
-    @DecimalMin(value="0.0", message = "Initial Balance should not be negative")
+    @DecimalMin(value="0.0",inclusive = false, message = "Initial Balance should not be negative")
     private BigDecimal initialBalance;
 }

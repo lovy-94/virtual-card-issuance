@@ -14,6 +14,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class SpendRequest extends TransactionRequest{
     @NotNull(message = "Debit Amount should not be null")
-    @DecimalMin(value="0.0", message = "Debit Amount should not be negative")
+    @DecimalMin(value="0.0", inclusive = false, message = "Debit Amount should not be negative")
     private BigDecimal debitAmount;
 }
