@@ -1,7 +1,7 @@
 package com.example.VirtualCardIssuance.controller;
 
 import com.example.VirtualCardIssuance.dto.TransactionResponse;
-import com.example.VirtualCardIssuance.service.TransactionService;
+import com.example.VirtualCardIssuance.service.TransactionServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +17,9 @@ import java.util.List;
 @Slf4j
 public class TransactionController {
 
-    private final TransactionService transactionService;
+    private final TransactionServiceImpl transactionService;
 
-    public TransactionController(TransactionService transactionService){
+    public TransactionController(TransactionServiceImpl transactionService){
         this.transactionService=transactionService;
     }
 

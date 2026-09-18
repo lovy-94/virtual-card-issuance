@@ -25,11 +25,11 @@ import java.util.function.ToIntBiFunction;
 public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
-    private final TransactionService transactionService;
+    private final TransactionServiceImpl transactionService;
     private final CardValidation cardValidation;
     private final ApplicationEventPublisher eventPublisher;
 
-    public CardServiceImpl(CardRepository cardRepository, TransactionService transactionService,
+    public CardServiceImpl(CardRepository cardRepository, TransactionServiceImpl transactionService,
                            CardValidation cardValidation, ApplicationEventPublisher eventPublisher){
         this.cardRepository=cardRepository;
         this.transactionService = transactionService;

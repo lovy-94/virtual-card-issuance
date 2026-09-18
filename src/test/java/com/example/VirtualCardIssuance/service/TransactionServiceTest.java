@@ -6,11 +6,9 @@ import com.example.VirtualCardIssuance.entity.TransactionStatus;
 import com.example.VirtualCardIssuance.entity.TransactionType;
 import com.example.VirtualCardIssuance.exception.CardNotFoundException;
 import com.example.VirtualCardIssuance.repository.TransactionRepository;
-import com.example.VirtualCardIssuance.validation.CardValidation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Incubating;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -21,8 +19,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +29,7 @@ public class TransactionServiceTest {
     private TransactionRepository transactionRepository;
     private List<Transaction> transactionList;
     @InjectMocks
-    private TransactionService transactionService;
+    private TransactionServiceImpl transactionService;
     @BeforeEach
     void setUp() {
         Transaction trans1 =  new Transaction(1L, 1L, TransactionType.SPEND, BigDecimal.valueOf(6000), LocalDateTime.now().minusHours(60), TransactionStatus.SUCCESSFUL, "abc-121",0L);
