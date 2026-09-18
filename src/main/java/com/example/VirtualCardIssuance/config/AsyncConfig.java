@@ -1,6 +1,7 @@
-package com.example.VirtualCardIssuance;
+package com.example.VirtualCardIssuance.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -15,6 +16,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 public class AsyncConfig implements AsyncConfigurer {
 
+    @Bean
     public Executor getAsyncExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
