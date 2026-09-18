@@ -40,6 +40,6 @@ public class CardValidation  {
             throw new CardNotFoundException("Card Not found cardId " + topupRequest.getCardId());
         }
 
-        spendRule.forEach(rule-> rule.validate(card,topupRequest.getCreditAmount()));
+        topUpRule.forEach(rule-> rule.validate(card,topupRequest.getCreditAmount()));
     }
 }
