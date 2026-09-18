@@ -61,7 +61,7 @@ public class CardServiceImpl implements CardService {
                                 BiConsumer<Card,BigDecimal> validate, ToIntBiFunction<Long, BigDecimal> balanceUpdater) {
         log.info("Spend from card : cardId {}, idempotencyKey {}", cardId, idempotencyKey);
         checkIdempotency(idempotencyKey);
-        Transaction transaction = buildPendingTransaction(cardId, amount, type, idempotencyKey);
+        Transaction transaction = Transaction.pending(cardId, amount, type, idempotencyKey);
         try{
 
             transactionService.saveTransaction(transaction);
@@ -72,7 +72,8 @@ public class CardServiceImpl implements CardService {
 
             int rowsUpdated = balanceUpdater.applyAsInt(cardId,amount);
             if (rowsUpdated == 1) {
-                markSuccessfull(transaction);
+                transaction.markSuccesful();
+                transactionService.saveTransaction(transaction);
                 eventPublisher.publishEvent(CardOperationEvent.success(cardId,type));
                 log.info("Spend from card : type {}, cardId {}, amount{} ", type, cardId,amount);
                 return;
@@ -84,7 +85,8 @@ public class CardServiceImpl implements CardService {
         }
         catch(CardNotFoundException | InactiveCardException
         | InsufficientBalanceException | ConcurrentUpdateException ex){
-            updateFailedTransaction(transaction);
+            transaction.markFailure();
+            transactionService.saveFailedTransaction(transaction);
             eventPublisher.publishEvent(CardOperationEvent.failure(cardId,type));
             throw ex;
         }
@@ -92,22 +94,6 @@ public class CardServiceImpl implements CardService {
             eventPublisher.publishEvent(CardOperationEvent.failure(cardId,type));
             throw  new DuplicateRequestException("Duplicate request for idempotency key"+ idempotencyKey);
         }
-    }
-
-    private void markSuccessfull(Transaction transaction) {
-        transaction.setStatus(TransactionStatus.SUCCESSFUL);
-        transactionService.saveTransaction(transaction);
-    }
-
-    private static Transaction buildPendingTransaction(Long cardId, BigDecimal amount, TransactionType type, String idempotencyKey) {
-        Transaction transaction = new Transaction();
-        transaction.setCardId(cardId);
-        transaction.setAmount(amount);
-        transaction.setType(type);
-        transaction.setCreatedAt(LocalDateTime.now());
-        transaction.setIdempotencyKey(idempotencyKey);
-        transaction.setStatus(TransactionStatus.PENDING);
-        return transaction;
     }
 
     public void checkIdempotency(String idempotencyKey) {
@@ -126,11 +112,6 @@ public class CardServiceImpl implements CardService {
         processRequest(topupRequest.getCardId(),topupRequest.getCreditAmount(),TransactionType.TOPUP,idempotencyKey,
                 (card,BigDecimal)->cardValidation.topUpValidations(card,topupRequest),
                 (Long,BigDecimal)->cardRepository.creditAmount(topupRequest.getCardId(), topupRequest.getCreditAmount()));
-    }
-
-    private void updateFailedTransaction(Transaction transaction) {
-        transaction.setStatus(TransactionStatus.DECLINED);
-        transactionService.saveFailedTransaction(transaction);
     }
 
     @Override

@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 
 
 @Getter
-@Setter
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,6 +26,32 @@ public class Transaction {
     private String idempotencyKey;
     @Version
     private Long version;
+
+    public static Transaction pending(Long cardId, BigDecimal amount,TransactionType type, String idempotencyKey){
+        Transaction transaction = new Transaction();
+        transaction.cardId=cardId;
+        transaction.amount = amount;
+        transaction.type = type;
+        transaction.createdAt = LocalDateTime.now();
+        transaction.idempotencyKey = idempotencyKey;
+        transaction.status = TransactionStatus.PENDING;
+        return transaction;
+    }
+
+    public void markSuccesful(){
+        requirePending();
+        this.status=TransactionStatus.SUCCESSFUL;
+    }
+    public void markFailure(){
+        requirePending();
+        this.status=TransactionStatus.DECLINED;
+    }
+
+    private void requirePending() {
+        if(this.status!=TransactionStatus.PENDING){
+            throw new IllegalStateException("Cannnot transistion transaction "+id+" from terminal status "+status);
+        }
+    }
 
     @Override
     public String toString() {

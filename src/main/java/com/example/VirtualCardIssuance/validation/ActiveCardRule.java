@@ -11,7 +11,7 @@ public class ActiveCardRule implements SpendRule,TopUpRule{
 
     @Override
     public void validate(Card card, BigDecimal amount) {
-        if(!CardStatus.ACTIVE.equals(card.getStatus())){
+        if(!card.canTransact()){
             throw new InactiveCardException("Inacive card , Card status is "+card.getStatus());
         }
     }

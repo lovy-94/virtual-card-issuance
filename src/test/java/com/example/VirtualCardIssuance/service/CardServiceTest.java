@@ -74,12 +74,8 @@ public class CardServiceTest {
          topupRequest = new TopupRequest(BigDecimal.valueOf(500));
          topupRequest.setCardId(1L);
         existingTransaction= new Transaction();
-        existingTransaction.setId(100L);
-        existingTransaction.setCardId(1L);
-        existingTransaction.setAmount(BigDecimal.valueOf(500));
-        existingTransaction.setType(TransactionType.SPEND);
-        existingTransaction.setStatus(TransactionStatus.SUCCESSFUL);
-        existingTransaction.setIdempotencyKey("abc-121");
+        existingTransaction=new Transaction(100L,1L,TransactionType.SPEND,BigDecimal.valueOf(500),LocalDateTime.now(),
+                TransactionStatus.SUCCESSFUL,"abc-121",0L);
     }
     @Test
     public void testCreateNewCard(){

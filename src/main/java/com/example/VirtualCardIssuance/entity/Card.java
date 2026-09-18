@@ -27,6 +27,16 @@ public class Card {
     @Version
     private Long version;
 
+    public boolean canTransact(){
+        return this.status==CardStatus.ACTIVE;
+    }
+
+    public void block(){
+        this.status=CardStatus.BLOCKED;
+    }
+    public void close(){
+        this.status=CardStatus.CLOSED;
+    }
     @Override
     public String toString() {
         return "Card{" +
