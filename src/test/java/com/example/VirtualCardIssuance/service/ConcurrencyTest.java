@@ -25,7 +25,7 @@ public class ConcurrencyTest {
     private CardRepository cardRepository;
 
     @Autowired
-    private CardService cardService;
+    private CardServiceImpl cardService;
 
     @Test
     void concurrentSpendUpdateTest() throws Exception {

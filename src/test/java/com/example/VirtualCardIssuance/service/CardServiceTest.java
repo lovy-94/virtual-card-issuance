@@ -7,20 +7,23 @@ import com.example.VirtualCardIssuance.dto.TopupRequest;
 import com.example.VirtualCardIssuance.entity.*;
 import com.example.VirtualCardIssuance.exception.*;
 import com.example.VirtualCardIssuance.repository.CardRepository;
-import com.example.VirtualCardIssuance.validation.CardValidation;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import com.example.VirtualCardIssuance.validation.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,23 +42,30 @@ public class CardServiceTest {
 
 
     private CardValidation cardValidation;
-    private  CardService cardService;
+    private CardServiceImpl cardService;
     private CardRequest cardRequest;
     private SpendRequest spendRequest;
     private Card card;
     private TopupRequest topupRequest;
     private Transaction existingTransaction;
-    private MeterRegistry meterRegistry;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+    private List<SpendRule> spendRuleList;
+    private List<TopUpRule> topUpRuleList;
 
     @BeforeEach
     void setUp() {
-        cardValidation = new CardValidation();
-meterRegistry=new SimpleMeterRegistry();
-        cardService = new CardService(
+        SpendRule spendSufficientBalanceRule = new SufficientBalanceRule();
+        SpendRule activeSpendCardRule = new ActiveCardRule();
+        spendRuleList = Arrays.asList(spendSufficientBalanceRule,activeSpendCardRule);
+        TopUpRule activeTopupCardRule = new ActiveCardRule();
+        topUpRuleList = Arrays.asList(activeTopupCardRule);
+        cardValidation = new CardValidation(spendRuleList,topUpRuleList);
+        cardService = new CardServiceImpl(
                 cardRepository,
                 transactionService,
                 cardValidation,
-                meterRegistry
+                eventPublisher
         );
 
          cardRequest = new CardRequest("Amy", BigDecimal.valueOf(5000));

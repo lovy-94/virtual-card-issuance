@@ -1,7 +1,7 @@
 package com.example.VirtualCardIssuance.controller;
 
 import com.example.VirtualCardIssuance.dto.*;
-import com.example.VirtualCardIssuance.service.CardService;
+import com.example.VirtualCardIssuance.service.CardServiceImpl;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class CardController {
 
-    private final CardService cardService;
+    private final CardServiceImpl cardService;
 
-    public CardController(CardService cardService){
+    public CardController(CardServiceImpl cardService){
         this.cardService=cardService;
     }
     @PostMapping("/createNewCard")
