@@ -3,10 +3,7 @@ package com.example.VirtualCardIssuance.validation;
 import com.example.VirtualCardIssuance.dto.SpendRequest;
 import com.example.VirtualCardIssuance.dto.TopupRequest;
 import com.example.VirtualCardIssuance.entity.Card;
-import com.example.VirtualCardIssuance.entity.CardStatus;
 import com.example.VirtualCardIssuance.exception.CardNotFoundException;
-import com.example.VirtualCardIssuance.exception.InactiveCardException;
-import com.example.VirtualCardIssuance.exception.InsufficientBalanceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

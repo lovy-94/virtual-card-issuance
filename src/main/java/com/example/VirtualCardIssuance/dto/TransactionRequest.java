@@ -1,6 +1,6 @@
 package com.example.VirtualCardIssuance.dto;
 
-import com.example.VirtualCardIssuance.entity.TransactionType;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

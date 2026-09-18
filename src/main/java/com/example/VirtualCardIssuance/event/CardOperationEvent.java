@@ -2,7 +2,7 @@ package com.example.VirtualCardIssuance.event;
 
 import com.example.VirtualCardIssuance.entity.TransactionType;
 
-import java.awt.image.Raster;
+
 
 public class CardOperationEvent {
     private enum Outcome{SUCCESS,FAILURE}
